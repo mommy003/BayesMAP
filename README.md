@@ -22,11 +22,6 @@ install.packages("remotes")
 library(remotes)
 
 remotes::install_github("mommy003/BayesMAP")
-```
-
-### Load the package
-
-```r
 library(BayesMAP)
 ```
 
