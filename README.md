@@ -18,7 +18,9 @@ The package implements an efficient Markov chain Monte Carlo (MCMC) algorithm wi
 ### Install the development version
 
 ```r
-# install.packages("remotes")
+install.packages("remotes")
+library(remotes)
+
 remotes::install_github("mommy003/BayesMAP")
 ```
 
