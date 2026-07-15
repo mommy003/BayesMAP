@@ -1,0 +1,21 @@
+Package: BayesMAP
+Title: Bayesian Multi-level (Omics) Association Mapping
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: Bayesian model for SNP, gene and pathway association analysis.
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
+Imports:
+    Rcpp
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)
+LazyData: true
