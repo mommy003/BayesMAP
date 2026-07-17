@@ -2,7 +2,8 @@ Package: BayesMAP
 Title: Bayesian Multi-level (Omics) Association Mapping
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+    c(person("Jian", "Zeng", role = c("aut","cph"),email = "j.zeng@imb.uq.edu.qu"),
+             person("Moksedul", "Momin", role = c("aut", "cre","cph"), email = "cvasu.momin@gmail.com"))
 Description: Bayesian model for SNP, gene and pathway association analysis.
 License: GPL (>= 3)
 Encoding: UTF-8

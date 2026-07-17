@@ -13,3 +13,7 @@ updateGamma_cpp <- function(gamma, delta, Delta, A, B, L, alpha1, alpha2, alpha3
     .Call(`_BayesMAP_updateGamma_cpp`, gamma, delta, Delta, A, B, L, alpha1, alpha2, alpha3, mu_pi, mu_Pi, baseline, pathways, rho)
 }
 
+updateZ_cpp <- function(indicator, eta) {
+    .Call(`_BayesMAP_updateZ_cpp`, indicator, eta)
+}
+

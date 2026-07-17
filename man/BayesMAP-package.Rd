@@ -9,11 +9,12 @@
 Bayesian multi-level association mapping package.
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: Moksedul Momin \email{cvasu.momin@gmail.com} [copyright holder]
 
 Authors:
 \itemize{
-  \item First Last \email{first.last@example.com}
+  \item Moksedul Momin \email{cvasu.momin@gmail.com} [copyright holder]
+  \item Jian Zeng \email{j.zeng@imb.uq.edu.qu} [copyright holder]
 }
 
 }

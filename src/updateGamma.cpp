@@ -1,7 +1,45 @@
 #include <Rcpp.h>
+#include <algorithm>
+#include <cmath>
 
 using namespace Rcpp;
 
+inline double clamp_probability_gamma(double p) {
+  const double eps = 1e-12;
+
+  if (!R_finite(p)) {
+    return 0.5;
+  }
+
+  if (p < eps) {
+    return eps;
+  }
+
+  if (p > 1.0 - eps) {
+    return 1.0 - eps;
+  }
+
+  return p;
+}
+
+inline double probability_from_logpost_gamma(
+    double logpost0,
+    double logpost1
+) {
+  const double difference = logpost0 - logpost1;
+
+  double probability;
+
+  if (difference >= 0.0) {
+    const double e = std::exp(-difference);
+    probability = e / (1.0 + e);
+  } else {
+    const double e = std::exp(difference);
+    probability = 1.0 / (1.0 + e);
+  }
+
+  return clamp_probability_gamma(probability);
+}
 
 // [[Rcpp::export]]
 IntegerVector updateGamma_cpp(
@@ -19,131 +57,212 @@ IntegerVector updateGamma_cpp(
     NumericVector baseline,
     NumericVector pathways,
     double rho
-){
+) {
+  const int m = A.nrow();
+  const int C = A.ncol();
+  const int G = B.nrow();
 
-    int m = A.nrow();
-    int C = A.ncol();
-    int G = B.nrow();
+  // ---------------------------------------------------------------
+  // Input checks
+  // ---------------------------------------------------------------
 
+  if (delta.size() != m) {
+    stop("delta length must equal nrow(A).");
+  }
 
-    for(int c = 0; c < C; c++){
+  if (gamma.size() != C) {
+    stop("gamma length must equal ncol(A).");
+  }
 
-        double logpost0 = 0.0;
-        double logpost1 = 0.0;
+  if (B.ncol() != C) {
+    stop("B must have the same number of columns as A.");
+  }
 
+  if (Delta.size() != G) {
+    stop("Delta length must equal nrow(B).");
+  }
 
-        for(int j = 0; j < m; j++){
+  if (L.nrow() != m || L.ncol() != G) {
+    stop("L must be nrow(A) by nrow(B).");
+  }
 
-            double eta0 =
-                mu_pi + baseline[j];
+  if (baseline.size() != m) {
+    stop("baseline length must equal nrow(A).");
+  }
 
+  if (pathways.size() != G) {
+    stop("pathways length must equal nrow(B).");
+  }
 
-            // L Delta contribution
-            for(int g=0; g<G; g++){
-                eta0 += L(j,g) * Delta[g] * alpha1;
-            }
+  rho = clamp_probability_gamma(rho);
 
+  // ---------------------------------------------------------------
+  // Cached matrix-vector products
+  // ---------------------------------------------------------------
 
-            // A gamma excluding current c
-            for(int cc=0; cc<C; cc++){
+  NumericVector LDelta(m);
+  NumericVector Agamma(m);
+  NumericVector Bgamma(G);
 
-                if(cc != c)
-                    eta0 += A(j,cc) * gamma[cc] * alpha2;
+  // LDelta = L %*% Delta
+  for (int j = 0; j < m; ++j) {
+    double value = 0.0;
 
-            }
-
-
-            double psnp0 =
-                R::pnorm(eta0,0,1,1,0);
-
-
-            double eta1 =
-                eta0 + A(j,c)*alpha2;
-
-
-            double psnp1 =
-                R::pnorm(eta1,0,1,1,0);
-
-
-            psnp0 = std::min(std::max(psnp0,1e-12),1-1e-12);
-            psnp1 = std::min(std::max(psnp1,1e-12),1-1e-12);
-
-
-            logpost0 += delta[j]*log(psnp0)
-                      +(1-delta[j])*log(1-psnp0);
-
-
-            logpost1 += delta[j]*log(psnp1)
-                      +(1-delta[j])*log(1-psnp1);
-
-        }
-
-
-
-        // Gene component
-
-        for(int g=0; g<G; g++){
-
-            double xi0 =
-                mu_Pi + pathways[g];
-
-
-            for(int cc=0;cc<C;cc++){
-
-                if(cc != c)
-                    xi0 += B(g,cc)*gamma[cc]*alpha3;
-
-            }
-
-
-            double pg0 =
-                R::pnorm(xi0,0,1,1,0);
-
-
-            double xi1 =
-                xi0 + B(g,c)*alpha3;
-
-
-            double pg1 =
-                R::pnorm(xi1,0,1,1,0);
-
-
-            pg0 = std::min(std::max(pg0,1e-12),1-1e-12);
-            pg1 = std::min(std::max(pg1,1e-12),1-1e-12);
-
-
-            logpost0 += Delta[g]*log(pg0)
-                      +(1-Delta[g])*log(1-pg0);
-
-
-            logpost1 += Delta[g]*log(pg1)
-                      +(1-Delta[g])*log(1-pg1);
-
-        }
-
-
-        logpost0 += log(1-rho);
-        logpost1 += log(rho);
-
-
-
-        double pr1 =
-            1.0/(1.0+exp(logpost0-logpost1));
-
-
-        if(!R_finite(pr1))
-            pr1 = 0.5;
-
-
-        pr1 = std::min(std::max(pr1,1e-12),1-1e-12);
-
-
-        gamma[c] =
-            R::rbinom(1,pr1);
-
+    for (int g = 0; g < G; ++g) {
+      value += L(j, g) * static_cast<double>(Delta[g]);
     }
 
+    LDelta[j] = value;
+  }
 
-    return gamma;
+  // Agamma = A %*% gamma
+  for (int j = 0; j < m; ++j) {
+    double value = 0.0;
 
+    for (int c = 0; c < C; ++c) {
+      value += A(j, c) * static_cast<double>(gamma[c]);
+    }
+
+    Agamma[j] = value;
+  }
+
+  // Bgamma = B %*% gamma
+  for (int g = 0; g < G; ++g) {
+    double value = 0.0;
+
+    for (int c = 0; c < C; ++c) {
+      value += B(g, c) * static_cast<double>(gamma[c]);
+    }
+
+    Bgamma[g] = value;
+  }
+
+  // ---------------------------------------------------------------
+  // Sequential Gibbs updates for gamma
+  // ---------------------------------------------------------------
+
+  for (int c = 0; c < C; ++c) {
+    const int old_gamma_c = gamma[c];
+
+    double logpost0 = 0.0;
+    double logpost1 = 0.0;
+
+    // SNP-level component
+    for (int j = 0; j < m; ++j) {
+      const double Agamma_without_c =
+        Agamma[j] -
+        A(j, c) * static_cast<double>(old_gamma_c);
+
+      const double eta0 =
+        mu_pi +
+        LDelta[j] * alpha1 +
+        Agamma_without_c * alpha2 +
+        baseline[j];
+
+      const double eta1 =
+        eta0 +
+        A(j, c) * alpha2;
+
+      double p_snp0 = R::pnorm(
+        eta0,
+        0.0,
+        1.0,
+        true,
+        false
+      );
+
+      double p_snp1 = R::pnorm(
+        eta1,
+        0.0,
+        1.0,
+        true,
+        false
+      );
+
+      p_snp0 = clamp_probability_gamma(p_snp0);
+      p_snp1 = clamp_probability_gamma(p_snp1);
+
+      if (delta[j] == 1) {
+        logpost0 += std::log(p_snp0);
+        logpost1 += std::log(p_snp1);
+      } else {
+        logpost0 += std::log1p(-p_snp0);
+        logpost1 += std::log1p(-p_snp1);
+      }
+    }
+
+    // Gene-level component
+    for (int g = 0; g < G; ++g) {
+      const double Bgamma_without_c =
+        Bgamma[g] -
+        B(g, c) * static_cast<double>(old_gamma_c);
+
+      const double xi0 =
+        mu_Pi +
+        Bgamma_without_c * alpha3 +
+        pathways[g];
+
+      const double xi1 =
+        xi0 +
+        B(g, c) * alpha3;
+
+      double p_gene0 = R::pnorm(
+        xi0,
+        0.0,
+        1.0,
+        true,
+        false
+      );
+
+      double p_gene1 = R::pnorm(
+        xi1,
+        0.0,
+        1.0,
+        true,
+        false
+      );
+
+      p_gene0 = clamp_probability_gamma(p_gene0);
+      p_gene1 = clamp_probability_gamma(p_gene1);
+
+      if (Delta[g] == 1) {
+        logpost0 += std::log(p_gene0);
+        logpost1 += std::log(p_gene1);
+      } else {
+        logpost0 += std::log1p(-p_gene0);
+        logpost1 += std::log1p(-p_gene1);
+      }
+    }
+
+    logpost0 += std::log1p(-rho);
+    logpost1 += std::log(rho);
+
+    const double pr1 = probability_from_logpost_gamma(
+      logpost0,
+      logpost1
+    );
+
+    const int new_gamma_c = static_cast<int>(
+      R::rbinom(1.0, pr1)
+    );
+
+    gamma[c] = new_gamma_c;
+
+    // Incrementally update cached products
+    const int change = new_gamma_c - old_gamma_c;
+
+    if (change != 0) {
+      for (int j = 0; j < m; ++j) {
+        Agamma[j] +=
+          static_cast<double>(change) * A(j, c);
+      }
+
+      for (int g = 0; g < G; ++g) {
+        Bgamma[g] +=
+          static_cast<double>(change) * B(g, c);
+      }
+    }
+  }
+
+  return gamma;
 }

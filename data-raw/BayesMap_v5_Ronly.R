@@ -1,5 +1,5 @@
 
-bayesmap <- function(
+bayesmap_R <- function(
     X, y,
     L, A, B,
     baseline = NULL,
@@ -148,21 +148,12 @@ bayesmap <- function(
     Agamma <- as.vector(A %*% gamma)
     eta_pi <- mu_pi + LDelta * alpha1 + Agamma * alpha2 + baseline
     
-    tmp <- updateBetaDelta_cpp(
-      X,
-      ycorr,
-      beta,
-      delta,
-      pi_j,
-      xpx,
-      vare,
-      sigmaBetaSq
-    )
-    
-    beta  <- tmp$beta
-    delta <- tmp$delta
-    ycorr <- tmp$ycorr
-    nnz   <- tmp$nnz
+    for (j in 1:m) {
+      if (delta[j] == 1)
+        z_pi[j] <- rtruncnorm_scalar(mean = eta_pi[j], sd = 1, lower = 0)
+      else
+        z_pi[j] <- rtruncnorm_scalar(mean = eta_pi[j], sd = 1, upper = 0)
+    }
     
     ## 4. Delta_g
     Bgamma <- as.vector(B %*% gamma)

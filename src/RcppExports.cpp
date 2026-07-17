@@ -77,11 +77,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// updateZ_cpp
+NumericVector updateZ_cpp(IntegerVector indicator, NumericVector eta);
+RcppExport SEXP _BayesMAP_updateZ_cpp(SEXP indicatorSEXP, SEXP etaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type indicator(indicatorSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type eta(etaSEXP);
+    rcpp_result_gen = Rcpp::wrap(updateZ_cpp(indicator, eta));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_BayesMAP_updateBetaDelta_cpp", (DL_FUNC) &_BayesMAP_updateBetaDelta_cpp, 8},
     {"_BayesMAP_updateDelta_cpp", (DL_FUNC) &_BayesMAP_updateDelta_cpp, 14},
     {"_BayesMAP_updateGamma_cpp", (DL_FUNC) &_BayesMAP_updateGamma_cpp, 14},
+    {"_BayesMAP_updateZ_cpp", (DL_FUNC) &_BayesMAP_updateZ_cpp, 2},
     {NULL, NULL, 0}
 };
 
