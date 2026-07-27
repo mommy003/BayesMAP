@@ -1,24 +1,48 @@
 # BayesMAP
 
-[![R](https://img.shields.io/badge/R-%3E%3D4.2-blue.svg)]()
-[![License: GPL-3](https://img.shields.io/badge/License-GPL--3-blue.svg)]()
+<div align="center">
 
-## Overview
+### Bayesian Multi-layer Association Mapping
 
-**BayesMAP** is an R package for **Bayesian Multi-layer Association Mapping**, designed to jointly identify trait-associated **SNPs, genes, and cell/pathway annotations** within a unified hierarchical Bayesian framework.
-
-Unlike conventional GWAS methods that analyse variants independently, BayesMAP integrates multiple layers of biological information to improve the identification of causal variants and biologically relevant functional units.
-
-The package implements an efficient **Markov chain Monte Carlo (MCMC)** algorithm, with computationally intensive updates accelerated using **RcppArmadillo**, providing substantial improvements in computational efficiency while maintaining the flexibility and usability of R.
+*A hierarchical Bayesian framework for integrating SNPs, genes and cell/pathway annotations using individual-level or GWAS summary statistics.*
 
 ---
 
-## Methodological Framework
+[![R](https://img.shields.io/badge/R-%3E%3D4.2-blue.svg)]()
+[![License: GPL--3](https://img.shields.io/badge/License-GPL--3-blue.svg)]()
 
-BayesMAP models three hierarchical layers simultaneously:
+</div>
+
+---
+
+# Overview
+
+**BayesMAP** is an R package for Bayesian multi-layer association mapping that jointly models genetic variants, genes and biological annotations within a unified hierarchical Bayesian framework.
+
+Unlike conventional GWAS methods that analyse variants independently, BayesMAP borrows information across multiple biological layers to improve identification of causal variants and biologically relevant functional units.
+
+BayesMAP supports three analysis modes:
+
+- Individual-level genotype and phenotype data
+- GWAS summary statistics with a dense LD matrix
+- GWAS summary statistics using block-wise LD matrices for scalable genome-wide analyses
+
+Computationally intensive MCMC updates are implemented in **Rcpp/C++**, providing substantial speed improvements while retaining the flexibility of R.
+
+---
+
+# Methodological framework
+
+BayesMAP models three biological layers simultaneously
 
 ```
-SNP  →  Gene  →  Cell / Pathway
+SNP
+ │
+ ▼
+Gene
+ │
+ ▼
+Cell / Pathway
 ```
 
 The model estimates
@@ -27,30 +51,44 @@ The model estimates
 - SNP inclusion indicators (δ)
 - Gene inclusion indicators (Δ)
 - Cell/pathway inclusion indicators (γ)
-
-while borrowing information across biological layers through hierarchical priors.
+- SNP heritability
+- Genetic variance
+- Residual variance
+- Posterior inclusion probabilities (PIPs)
 
 Posterior inference is performed using Gibbs sampling.
 
 ---
 
-## Features
+# Features
 
-- Bayesian multi-layer association mapping
-- Joint modelling of SNPs, genes and cell/pathway annotations
-- Hierarchical Bayesian variable selection
-- Posterior inclusion probability (PIP) estimation
-- Bayesian estimation of SNP effects
-- Efficient Gibbs sampler
-- Computationally intensive updates implemented in C++ using Rcpp
-- Example datasets included
-- Fully documented R package
+✔ Bayesian multi-layer association mapping
+
+✔ Individual-level and GWAS summary-statistics analyses
+
+✔ Dense LD implementation
+
+✔ Block-wise LD implementation for large datasets
+
+✔ Hierarchical Bayesian variable selection
+
+✔ Posterior inclusion probability estimation
+
+✔ Bayesian estimation of SNP effects
+
+✔ Efficient Gibbs sampler
+
+✔ Computational bottlenecks accelerated using Rcpp
+
+✔ Example datasets included
+
+✔ Extensive unit testing
 
 ---
 
-## Installation
+# Installation
 
-Install the latest development version from GitHub
+Install the latest development version from GitHub.
 
 ```r
 install.packages("remotes")
@@ -62,8 +100,10 @@ library(BayesMAP)
 
 ---
 
-## Quick Start
-### Individual-level data
+# Quick start
+
+## 1. Individual-level analysis
+
 ```r
 library(BayesMAP)
 
@@ -86,7 +126,9 @@ fit <- bayesmap(
 summary(fit)
 ```
 
-### Summary statistics with block-wise LD matrices
+---
+
+## 2. GWAS summary statistics (dense LD)
 
 ```r
 library(BayesMAP)
@@ -99,195 +141,239 @@ data(B)
 
 N <- nrow(X)
 
-## Standardise genotypes using denominator N
+## Standardise genotype matrix
 X_std <- scale(
-  X,
-  center = TRUE,
-  scale = FALSE
+    X,
+    center = TRUE,
+    scale = FALSE
 )
 
 X_std <- sweep(
-  X_std,
-  MARGIN = 2,
-  STATS = sqrt(colMeans(X_std^2)),
-  FUN = "/"
+    X_std,
+    MARGIN = 2,
+    STATS = sqrt(colMeans(X_std^2)),
+    FUN = "/"
 )
 
-## Standardise phenotype using denominator N
+## Standardise phenotype
 y_std <- y - mean(y)
 y_std <- y_std / sqrt(mean(y_std^2))
 
-## Construct marginal SNP effects and dense LD matrix
-bhat <- as.numeric(
-  crossprod(X_std, y_std) / N
-)
-
+## Construct summary statistics
 LD <- crossprod(X_std) / N
 
-## Divide SNPs into four blocks
+bhat <- as.numeric(
+    crossprod(X_std, y_std) / N
+)
+
+fit_dense <- bayesmap_summary(
+    bhat = bhat,
+    LD = LD,
+    N = N,
+    L = L,
+    A = A,
+    B = B,
+    phenotype_variance = 1,
+    niter = 5000,
+    burnin = 1000,
+    thin = 2,
+    verbose = TRUE
+)
+
+summary(fit_dense)
+```
+
+---
+
+## 3. GWAS summary statistics (block-wise LD)
+
+```r
+library(BayesMAP)
+
+## Divide LD matrix into blocks
 block_indices <- split(
-  seq_len(ncol(LD)),
-  ceiling(seq_len(ncol(LD)) / 50)
+    seq_len(ncol(LD)),
+    ceiling(seq_len(ncol(LD)) / 50)
 )
 
 block_indices <- unname(block_indices)
 
-## Extract block-specific LD matrices
 LD_blocks <- lapply(
-  block_indices,
-  function(index) {
-    LD[index, index, drop = FALSE]
-  }
+    block_indices,
+    function(index) {
+        LD[index, index, drop = FALSE]
+    }
 )
 
-set.seed(123)
-
 fit_block <- bayesmap_summary_blocks(
-  bhat = bhat,
-  LD_blocks = LD_blocks,
-  block_indices = block_indices,
-  N = N,
-  L = L,
-  A = A,
-  B = B,
-  phenotype_variance = 1,
-  niter = 5000,
-  burnin = 1000,
-  thin = 2,
-  verbose = TRUE
+    bhat = bhat,
+    LD_blocks = LD_blocks,
+    block_indices = block_indices,
+    N = N,
+    L = L,
+    A = A,
+    B = B,
+    phenotype_variance = 1,
+    niter = 5000,
+    burnin = 1000,
+    thin = 2,
+    verbose = TRUE
 )
 
 summary(fit_block)
 ```
 
-
-```
-The block-wise implementation assumes negligible LD between blocks. Block boundaries should therefore
-be selected using chromosomes, established LD blocks, or another biologically appropriate partition rather
-than arbitrary equal-sized groups in real analyses.
-```
-
-
-```
-## Implementation Validation
-
-The dense summary-statistics implementation was validated against the individual-level
-implementation using consistently standardised genotype and phenotype data.
-
-The block-wise implementation was then compared with the dense implementation using the
-same block-diagonal LD matrix. With identical random seeds, posterior samples, variance components,
-model parameters, and SNP-, gene-, and cell-level posterior inclusion probabilities were identical,
-confirming the correctness of the block-wise implementation.
-```
-
-## Inputs
-
-BayesMAP requires
-
-| Object | Description |
-|---------|-------------|
-| `X` | Genotype matrix (individuals × SNPs) |
-| `y` | Phenotype vector |
-| `L` | SNP-to-gene annotation matrix |
-| `A` | SNP-to-cell/pathway annotation matrix |
-| `B` | Gene-to-cell/pathway annotation matrix |
-
-Optional inputs include
-
-- baseline SNP priors
-- pathway priors
-- starting values
-- MCMC settings
-
 ---
 
-## Outputs
+# Outputs
 
-The fitted model returns
+All fitting functions return an object containing
 
-- Posterior SNP effects
-- SNP posterior inclusion probabilities (PIP)
+- Posterior samples
+- SNP effects
+- SNP posterior inclusion probabilities
 - Gene posterior inclusion probabilities
 - Cell/pathway posterior inclusion probabilities
-- Estimated SNP heritability
-- Genetic and residual variance estimates
-- Posterior samples of model parameters
+- Estimated heritability
+- Genetic variance
+- Residual variance
+- MCMC diagnostics
+
+For example,
+
+```r
+summary(fit)
+
+head(fit$pip_snp)
+
+head(fit$pip_gene)
+
+head(fit$pip_cell)
+```
 
 ---
 
-## Current Development Status
+# Block-wise implementation
 
-The current version includes
+The block-wise implementation partitions the LD matrix into approximately independent genomic blocks.
 
-- Hierarchical Bayesian model
-- Gibbs sampler
-- Rcpp implementation of computational bottlenecks
+Compared with the dense implementation, it
+
+- greatly reduces memory usage
+- scales to genome-wide analyses
+- produces identical posterior inference when the dense LD matrix is block diagonal
+
+For real analyses, LD blocks should correspond to biologically meaningful independent regions (e.g. chromosomes or established LD blocks) rather than arbitrary equal-sized partitions.
+
+---
+
+# Validation
+
+The package has been extensively validated.
+
+### Individual-level vs dense summary statistics
+
+Using consistently standardised genotype and phenotype data,
+
+- posterior means are highly concordant
+- posterior inclusion probabilities are highly correlated
+- parameter recovery is nearly identical
+
+### Dense vs block-wise summary statistics
+
+When the dense LD matrix is converted to its block-diagonal representation,
+
+- posterior samples are identical
+- posterior means are identical
+- variance components are identical
+- SNP, gene and cell/pathway PIPs are identical
+
+confirming correctness of the block-wise implementation.
+
+---
+
+# Current package structure
+
+```
+BayesMAP
+│
+├── bayesmap()
+│
+├── bayesmap_summary()
+│
+├── bayesmap_summary_blocks()
+│
+├── summary()
+│
+└── Rcpp
+     ├── updateBetaDelta.cpp
+     ├── updateDelta.cpp
+     ├── updateGamma.cpp
+     ├── updateBetaDeltaSummary.cpp
+     └── updateBetaDeltaSummaryBlocks.cpp
+```
+
+---
+
+# Development status
+
+Current version includes
+
+- Individual-level BayesMAP
+- Dense summary-statistics implementation
+- Block-wise summary-statistics implementation
+- Rcpp acceleration
 - Unit testing
-- Simulated example dataset
+- Example datasets
 
-The following developments are currently underway
+Planned developments include
 
 - Full C++ implementation
-- Parallel MCMC
-- Multi-threaded computation (OpenMP)
-- Prediction of independent datasets
-- Advanced visualisation functions
+- OpenMP parallelisation
+- Multi-threaded MCMC
+- Prediction utilities
+- Visualisation functions
 - Vignettes
 - CRAN submission
 
 ---
 
-## Software Architecture
-
-```
-R
-│
-├── bayesmap()
-├── MCMC Driver
-├── Parameter Updates
-│
-└── Rcpp
-      ├── updateBetaDelta.cpp
-      ├── updateDelta.cpp
-      └── updateGamma.cpp
-```
-
----
-
-## Citation
+# Citation
 
 If you use BayesMAP in your research, please cite
 
-> ####
-> BayesMAP: #######.
-> 
+> Momin, M.M., Zeng, J., *et al.* **BayesMAP: Bayesian Multi-layer Association Mapping integrating SNPs, genes and biological annotations.** *(Manuscript in preparation.)*
 
 ---
 
-## License
+# License
 
 GPL-3
 
 ---
 
-## Contact
+# Authors
 
-**Md. Moksedul Momin**
-Email:
-m.momin@uq.edu.au
+**Dr Md Moksedul Momin**
 
-**Jian Zeng**
-Email:
-j.zeng@imb.uq.edu.au
+Institute for Molecular Bioscience
 
-Institute for Molecular Bioscience  
 The University of Queensland
 
-GitHub:
-https://github.com/mommy003
+Email: m.momin@uq.edu.au
 
 ---
 
-## Acknowledgements
+**Dr Jian Zeng**
+
+Institute for Molecular Bioscience
+
+The University of Queensland
+
+Email: j.zeng@imb.uq.edu.au
+
+---
+
+# Acknowledgements
 
 BayesMAP has been developed at the Institute for Molecular Bioscience, The University of Queensland, Australia.
