@@ -86,35 +86,7 @@ fit <- bayesmap(
 summary(fit)
 ```
 
-### Summary statistics with a dense LD matrix
-```r
-data(bhat)
-data(se)
-data(LD)
-data(L)
-data(A)
-data(B)
-fit_dense <- bayesmap_summary(
-    bhat = bhat,
-    se = se, LD = LD, L = L, A = A, B = B, niter = 1000, verbose = TRUE )
 
-summary(fit_dense)
-```
-
-### Summary statistics with Block-wise LD matrix
-```r
-data(se)
-data(LD_blocks)
-data(block_index)
-data(L)
-data(A)
-data(B)
-
-fit_block <- bayesmap_summary_block( bhat = bhat, se = se, LD_blocks = LD_blocks, block_index = block_index, L = L, A = A, B = B, niter = 1000, verbose = TRUE )
-summary(fit_block)
-```
-
----
 
 ## Inputs
 
