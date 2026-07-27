@@ -86,7 +86,79 @@ fit <- bayesmap(
 summary(fit)
 ```
 
+### Summary statistics with block-wise LD matrices
 
+```r
+library(BayesMAP)
+
+data(X)
+data(y)
+data(L)
+data(A)
+data(B)
+
+N <- nrow(X)
+
+## Standardise genotypes using denominator N
+X_std <- scale(
+  X,
+  center = TRUE,
+  scale = FALSE
+)
+
+X_std <- sweep(
+  X_std,
+  MARGIN = 2,
+  STATS = sqrt(colMeans(X_std^2)),
+  FUN = "/"
+)
+
+## Standardise phenotype using denominator N
+y_std <- y - mean(y)
+y_std <- y_std / sqrt(mean(y_std^2))
+
+## Construct marginal SNP effects and dense LD matrix
+bhat <- as.numeric(
+  crossprod(X_std, y_std) / N
+)
+
+LD <- crossprod(X_std) / N
+
+## Divide SNPs into four blocks
+block_indices <- split(
+  seq_len(ncol(LD)),
+  ceiling(seq_len(ncol(LD)) / 50)
+)
+
+block_indices <- unname(block_indices)
+
+## Extract block-specific LD matrices
+LD_blocks <- lapply(
+  block_indices,
+  function(index) {
+    LD[index, index, drop = FALSE]
+  }
+)
+
+set.seed(123)
+
+fit_block <- bayesmap_summary_blocks(
+  bhat = bhat,
+  LD_blocks = LD_blocks,
+  block_indices = block_indices,
+  N = N,
+  L = L,
+  A = A,
+  B = B,
+  phenotype_variance = 1,
+  niter = 5000,
+  burnin = 1000,
+  thin = 2,
+  verbose = TRUE
+)
+
+summary(fit_block)
+```
 
 
 ```markdown
