@@ -95,7 +95,7 @@ summary(fit)
 Dense and block-wise summary-statistics implementations are currently under
 development and are not yet available through the exported package interface.
 They will be added in a future release.
-
+```
 
 
 ## Inputs
