@@ -172,9 +172,13 @@ equal-sized groups in real analyses.
 ```markdown
 ## Implementation Validation
 
-The dense summary-statistics implementation was validated against the individual-level implementation using consistently standardised genotype and phenotype data.
+The dense summary-statistics implementation was validated against the individual-level
+implementation using consistently standardised genotype and phenotype data.
 
-The block-wise implementation was then compared with the dense implementation using the same block-diagonal LD matrix. With identical random seeds, posterior samples, variance components, model parameters, and SNP-, gene-, and cell-level posterior inclusion probabilities were identical, confirming the correctness of the block-wise implementation.
+The block-wise implementation was then compared with the dense implementation using the
+same block-diagonal LD matrix. With identical random seeds, posterior samples, variance components,
+model parameters, and SNP-, gene-, and cell-level posterior inclusion probabilities were identical,
+confirming the correctness of the block-wise implementation.
 ```
 
 ## Inputs
