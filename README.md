@@ -355,21 +355,11 @@ GPL-3
 # Authors
 
 **Dr Md Moksedul Momin**
-
-Institute for Molecular Bioscience
-
-The University of Queensland
-
 Email: m.momin@uq.edu.au
 
 ---
 
 **Dr Jian Zeng**
-
-Institute for Molecular Bioscience
-
-The University of Queensland
-
 Email: j.zeng@imb.uq.edu.au
 
 ---
