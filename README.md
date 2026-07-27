@@ -161,7 +161,7 @@ summary(fit_block)
 ```
 
 
-```markdown
+```
 The block-wise implementation assumes negligible LD between blocks. Block boundaries should therefore
 be selected using chromosomes, established LD blocks, or another biologically appropriate partition rather
 than arbitrary equal-sized groups in real analyses.
