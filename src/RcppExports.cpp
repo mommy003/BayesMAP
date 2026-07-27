@@ -29,6 +29,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// updateBetaDeltaSummary_cpp
+List updateBetaDeltaSummary_cpp(NumericVector bhat, NumericMatrix LD, double N, NumericVector beta, IntegerVector delta, NumericVector pi_j, double vare, double sigmaBetaSq);
+RcppExport SEXP _BayesMAP_updateBetaDeltaSummary_cpp(SEXP bhatSEXP, SEXP LDSEXP, SEXP NSEXP, SEXP betaSEXP, SEXP deltaSEXP, SEXP pi_jSEXP, SEXP vareSEXP, SEXP sigmaBetaSqSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type bhat(bhatSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type LD(LDSEXP);
+    Rcpp::traits::input_parameter< double >::type N(NSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type delta(deltaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pi_j(pi_jSEXP);
+    Rcpp::traits::input_parameter< double >::type vare(vareSEXP);
+    Rcpp::traits::input_parameter< double >::type sigmaBetaSq(sigmaBetaSqSEXP);
+    rcpp_result_gen = Rcpp::wrap(updateBetaDeltaSummary_cpp(bhat, LD, N, beta, delta, pi_j, vare, sigmaBetaSq));
+    return rcpp_result_gen;
+END_RCPP
+}
 // updateDelta_cpp
 IntegerVector updateDelta_cpp(IntegerVector Delta, IntegerVector delta, NumericMatrix L, IntegerVector gamma, NumericMatrix A, NumericMatrix B, double alpha1, double alpha2, double alpha3, double mu_pi, double mu_Pi, NumericVector baseline, NumericVector pathways, double rho);
 RcppExport SEXP _BayesMAP_updateDelta_cpp(SEXP DeltaSEXP, SEXP deltaSEXP, SEXP LSEXP, SEXP gammaSEXP, SEXP ASEXP, SEXP BSEXP, SEXP alpha1SEXP, SEXP alpha2SEXP, SEXP alpha3SEXP, SEXP mu_piSEXP, SEXP mu_PiSEXP, SEXP baselineSEXP, SEXP pathwaysSEXP, SEXP rhoSEXP) {
@@ -92,6 +110,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_BayesMAP_updateBetaDelta_cpp", (DL_FUNC) &_BayesMAP_updateBetaDelta_cpp, 8},
+    {"_BayesMAP_updateBetaDeltaSummary_cpp", (DL_FUNC) &_BayesMAP_updateBetaDeltaSummary_cpp, 8},
     {"_BayesMAP_updateDelta_cpp", (DL_FUNC) &_BayesMAP_updateDelta_cpp, 14},
     {"_BayesMAP_updateGamma_cpp", (DL_FUNC) &_BayesMAP_updateGamma_cpp, 14},
     {"_BayesMAP_updateZ_cpp", (DL_FUNC) &_BayesMAP_updateZ_cpp, 2},

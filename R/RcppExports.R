@@ -5,6 +5,10 @@ updateBetaDelta_cpp <- function(X, ycorr, beta, delta, pi_j, xpx, vare, sigmaBet
     .Call(`_BayesMAP_updateBetaDelta_cpp`, X, ycorr, beta, delta, pi_j, xpx, vare, sigmaBetaSq)
 }
 
+updateBetaDeltaSummary_cpp <- function(bhat, LD, N, beta, delta, pi_j, vare, sigmaBetaSq) {
+    .Call(`_BayesMAP_updateBetaDeltaSummary_cpp`, bhat, LD, N, beta, delta, pi_j, vare, sigmaBetaSq)
+}
+
 updateDelta_cpp <- function(Delta, delta, L, gamma, A, B, alpha1, alpha2, alpha3, mu_pi, mu_Pi, baseline, pathways, rho) {
     .Call(`_BayesMAP_updateDelta_cpp`, Delta, delta, L, gamma, A, B, alpha1, alpha2, alpha3, mu_pi, mu_Pi, baseline, pathways, rho)
 }
