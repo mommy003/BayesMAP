@@ -357,8 +357,6 @@ GPL-3
 **Dr Md Moksedul Momin**
 Email: m.momin@uq.edu.au
 
----
-
 **Dr Jian Zeng**
 Email: j.zeng@imb.uq.edu.au
 
