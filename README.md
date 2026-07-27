@@ -166,9 +166,9 @@ R
 
 If you use BayesMAP in your research, please cite
 
-> Momin MM, et al.
-> BayesMAP: Bayesian Multi-layer Association Mapping integrating GWAS and functional omics.
-> *(Manuscript in preparation.)*
+> ####
+> BayesMAP: #######.
+> 
 
 ---
 
@@ -180,13 +180,16 @@ GPL-3
 
 ## Contact
 
-**Dr Md. Moksedul Momin**
+**Md. Moksedul Momin**
+Email:
+m.momin@uq.edu.au
+
+**Jian Zeng**
+Email:
+j.zeng@imb.uq.edu.au
 
 Institute for Molecular Bioscience  
 The University of Queensland
-
-Email:
-m.momin@uq.edu.au
 
 GitHub:
 https://github.com/mommy003
