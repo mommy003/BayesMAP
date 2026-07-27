@@ -168,7 +168,7 @@ than arbitrary equal-sized groups in real analyses.
 ```
 
 
-```markdown
+```
 ## Implementation Validation
 
 The dense summary-statistics implementation was validated against the individual-level
