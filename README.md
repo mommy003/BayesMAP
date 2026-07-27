@@ -342,7 +342,7 @@ Planned developments include
 
 If you use BayesMAP in your research, please cite
 
-> Momin, M.M., Zeng, J., *et al.* **BayesMAP: Bayesian Multi-layer Association Mapping integrating SNPs, genes and biological annotations.** *(Manuscript in preparation.)*
+> Momin, M.M., Zeng, J., *et al.* **BayesMAP:.......** *(Manuscript in preparation.)*
 
 ---
 
