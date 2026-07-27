@@ -162,13 +162,26 @@ summary(fit_block)
 
 
 ```markdown
-### Summary-statistics analyses
-
-Dense and block-wise summary-statistics implementations are currently under
-development and are not yet available through the exported package interface.
-They will be added in a future release.
+The block-wise implementation assumes negligible LD between blocks. Block
+boundaries should therefore be selected using chromosomes, established LD
+blocks, or another biologically appropriate partition rather than arbitrary
+equal-sized groups in real analyses.
 ```
 
+
+```markdown
+## Implementation Validation
+
+The dense summary-statistics implementation was validated against the
+individual-level implementation using consistently standardised genotype and
+phenotype data.
+
+The block-wise implementation was then compared with the dense implementation
+using the same block-diagonal LD matrix. With identical random seeds, posterior
+samples, variance components, model parameters, and SNP-, gene-, and
+cell-level posterior inclusion probabilities were identical, confirming the
+correctness of the block-wise implementation.
+```
 
 ## Inputs
 
