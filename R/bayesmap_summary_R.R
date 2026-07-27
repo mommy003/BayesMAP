@@ -1,89 +1,51 @@
+#' Bayesian Multi-layer Association Mapping using GWAS Summary Statistics
+#'
+#' Fits the BayesMAP hierarchical Bayesian model using GWAS summary statistics
+#' and a dense linkage disequilibrium (LD) correlation matrix. The model jointly
+#' identifies trait-associated SNPs, genes, and cell/pathway annotations through
+#' a hierarchical Bayesian variable selection framework.
+#'
+#' Posterior inference is performed using Markov chain Monte Carlo (MCMC),
+#' while computationally intensive updates are accelerated using Rcpp.
+#'
+#' @param bhat Vector of marginal SNP effect estimates.
+#' @param LD Dense SNP correlation matrix.
+#' @param N GWAS sample size.
+#' @param L SNP-to-gene annotation matrix.
+#' @param A SNP-to-cell/pathway annotation matrix.
+#' @param B Gene-to-cell/pathway annotation matrix.
+#' @param baseline Optional SNP-level prior covariates.
+#' @param pathways Optional gene-level prior covariates.
+#' @param phenotype_variance Phenotypic variance (default = 1).
+#' @param niter Number of MCMC iterations.
+#' @param burnin Number of burn-in iterations.
+#' @param thin Thinning interval.
+#' @param store_beta Store posterior SNP effects.
+#' @param store_delta Store posterior SNP indicators.
+#' @param startPiSnp Initial SNP inclusion probability.
+#' @param startPiGene Initial gene inclusion probability.
+#' @param startRho Initial cell/pathway inclusion probability.
+#' @param startH2 Initial SNP heritability.
+#' @param mu_pi Initial SNP intercept.
+#' @param mu_Pi Initial gene intercept.
+#' @param sigmaAlphaSq Prior variance for enrichment parameters.
+#' @param nub Prior degrees of freedom for SNP effects.
+#' @param nue Prior degrees of freedom for residual variance.
+#' @param verbose Logical indicating whether progress is printed.
+#'
+#' @return
+#' An object of class `"BayesMAPSummary"` and `"BayesMAP"` containing
+#'
+#' * posterior samples of model parameters
+#' * posterior SNP effects
+#' * SNP posterior inclusion probabilities
+#' * gene posterior inclusion probabilities
+#' * cell/pathway posterior inclusion probabilities
+#' * estimated SNP heritability
+#'
+#' @export
 
-
-rtruncnorm_summary_scalar <- function(
-    mean = 0,
-    sd = 1,
-    lower = -Inf,
-    upper = Inf
-) {
-  if (!is.finite(sd) || sd <= 0) {
-    if (is.finite(lower)) {
-      return(lower)
-    }
-
-    if (is.finite(upper)) {
-      return(upper)
-    }
-
-    return(mean)
-  }
-
-  lower_probability <- if (is.infinite(lower) && lower < 0) {
-    0
-  } else {
-    pnorm(
-      (lower - mean) / sd
-    )
-  }
-
-  upper_probability <- if (is.infinite(upper) && upper > 0) {
-    1
-  } else {
-    pnorm(
-      (upper - mean) / sd
-    )
-  }
-
-  epsilon <- 1e-15
-
-  lower_probability <- min(
-    max(lower_probability, epsilon),
-    1 - epsilon
-  )
-
-  upper_probability <- min(
-    max(upper_probability, epsilon),
-    1 - epsilon
-  )
-
-  if (!is.finite(lower_probability) ||
-      !is.finite(upper_probability) ||
-      lower_probability >= upper_probability) {
-    if (is.finite(lower)) {
-      return(lower)
-    }
-
-    if (is.finite(upper)) {
-      return(upper)
-    }
-
-    return(mean)
-  }
-
-  u <- runif(
-    1L,
-    min = lower_probability,
-    max = upper_probability
-  )
-
-  out <- mean + sd * qnorm(u)
-
-  if (!is.finite(out)) {
-    if (is.finite(lower)) {
-      out <- lower
-    } else if (is.finite(upper)) {
-      out <- upper
-    } else {
-      out <- mean
-    }
-  }
-
-  out
-}
-
-
-
-bayesmap_summary_R <- function(
+bayesmap_summary <- function(
     bhat,
     LD,
     N,
@@ -570,7 +532,7 @@ bayesmap_summary_R <- function(
       sd1 <- 1
     }
 
-    alpha1 <- rtruncnorm_summary_scalar(
+    alpha1 <- rtruncnorm_scalar(
       mean = mean1,
       sd = sd1,
       lower = 0
@@ -598,7 +560,7 @@ bayesmap_summary_R <- function(
       sd2 <- 1
     }
 
-    alpha2 <- rtruncnorm_summary_scalar(
+    alpha2 <- rtruncnorm_scalar(
       mean = mean2,
       sd = sd2,
       lower = 0
@@ -629,7 +591,7 @@ bayesmap_summary_R <- function(
       sd3 <- 1
     }
 
-    alpha3 <- rtruncnorm_summary_scalar(
+    alpha3 <- rtruncnorm_scalar(
       mean = mean3,
       sd = sd3,
       lower = 0

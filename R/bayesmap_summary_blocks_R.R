@@ -1,182 +1,62 @@
-# Internal truncated-normal helper
-rtruncnorm_summary_scalar <- function(
-    mean = 0,
-    sd = 1,
-    lower = -Inf,
-    upper = Inf
-) {
-  if (!is.finite(sd) || sd <= 0) {
-    if (is.finite(lower)) return(lower)
-    if (is.finite(upper)) return(upper)
-    return(mean)
-  }
-
-  lower_probability <- if (is.infinite(lower) && lower < 0) {
-    0
-  } else {
-    pnorm((lower - mean) / sd)
-  }
-
-  upper_probability <- if (is.infinite(upper) && upper > 0) {
-    1
-  } else {
-    pnorm((upper - mean) / sd)
-  }
-
-  epsilon <- 1e-15
-
-  lower_probability <- min(
-    max(lower_probability, epsilon),
-    1 - epsilon
-  )
-
-  upper_probability <- min(
-    max(upper_probability, epsilon),
-    1 - epsilon
-  )
-
-  if (!is.finite(lower_probability) ||
-      !is.finite(upper_probability) ||
-      lower_probability >= upper_probability) {
-    if (is.finite(lower)) return(lower)
-    if (is.finite(upper)) return(upper)
-    return(mean)
-  }
-
-  u <- runif(
-    1L,
-    min = lower_probability,
-    max = upper_probability
-  )
-
-  out <- mean + sd * qnorm(u)
-
-  if (!is.finite(out)) {
-    if (is.finite(lower)) {
-      out <- lower
-    } else if (is.finite(upper)) {
-      out <- upper
-    } else {
-      out <- mean
-    }
-  }
-
-  out
-}
-
-
-# Validate a list of LD blocks and their SNP indices
-validate_summary_ld_blocks <- function(
-    LD_blocks,
-    block_indices,
-    m
-) {
-  if (!is.list(LD_blocks) || length(LD_blocks) < 1L) {
-    stop("LD_blocks must be a non-empty list of numeric matrices.")
-  }
-
-  if (!is.list(block_indices)) {
-    stop("block_indices must be a list.")
-  }
-
-  if (length(LD_blocks) != length(block_indices)) {
-    stop("LD_blocks and block_indices must have the same length.")
-  }
-
-  all_indices <- unlist(
-    block_indices,
-    use.names = FALSE
-  )
-
-  if (length(all_indices) != m) {
-    stop("The LD blocks must contain every SNP exactly once.")
-  }
-
-  if (anyDuplicated(all_indices)) {
-    stop("A SNP cannot occur in more than one LD block.")
-  }
-
-  if (!setequal(all_indices, seq_len(m))) {
-    stop("block_indices must collectively equal seq_len(length(bhat)).")
-  }
-
-  for (block in seq_along(LD_blocks)) {
-    index <- as.integer(block_indices[[block]])
-    LD_block <- LD_blocks[[block]]
-
-    if (length(index) < 1L) {
-      stop("LD blocks cannot be empty.")
-    }
-
-    if (any(index < 1L | index > m)) {
-      stop("A block index is outside the valid SNP range.")
-    }
-
-    if (!is.matrix(LD_block) || !is.numeric(LD_block)) {
-      stop("Each LD block must be an ordinary numeric matrix.")
-    }
-
-    block_size <- length(index)
-
-    if (any(dim(LD_block) != c(block_size, block_size))) {
-      stop(
-        "Each LD block dimension must match its block-index length."
-      )
-    }
-
-    if (any(!is.finite(LD_block))) {
-      stop("LD blocks cannot contain non-finite values.")
-    }
-
-    if (any(diag(LD_block) <= 0)) {
-      stop("All LD-block diagonal elements must be positive.")
-    }
-
-    if (max(abs(LD_block - t(LD_block))) > 1e-8) {
-      warning(
-        "LD block ", block,
-        " is not exactly symmetric. ",
-        "It will be replaced by (LD + t(LD)) / 2."
-      )
-
-      LD_blocks[[block]] <-
-        (LD_block + t(LD_block)) / 2
-    }
-  }
-
-  list(
-    LD_blocks = LD_blocks,
-    block_indices = lapply(
-      block_indices,
-      as.integer
-    )
-  )
-}
-
-
-# Calculate the block-diagonal product LD %*% vector
-summary_ld_block_matvec <- function(
-    vector,
-    LD_blocks,
-    block_indices
-) {
-  vector <- as.numeric(vector)
-  result <- numeric(length(vector))
-
-  for (block in seq_along(LD_blocks)) {
-    index <- block_indices[[block]]
-
-    result[index] <- as.numeric(
-      LD_blocks[[block]] %*% vector[index]
-    )
-  }
-
-  result
-}
-
+#' Fit BayesMAP using block-wise GWAS summary statistics
+#'
+#' Fits the BayesMAP hierarchical Bayesian model using GWAS summary
+#' statistics and a block-wise representation of the linkage
+#' disequilibrium (LD) matrix. The implementation partitions the LD
+#' matrix into independent blocks to reduce memory usage and improve
+#' computational efficiency while producing results equivalent to the
+#' dense summary-statistics implementation.
+#'
+#' @param bhat Numeric vector of marginal SNP effect estimates.
+#' @param LD_blocks A list of block-specific LD correlation matrices.
+#' @param block_indices A list of integer vectors giving the SNP indices
+#'   corresponding to each LD block.
+#' @param N GWAS sample size.
+#' @param L SNP-by-gene annotation matrix.
+#' @param A SNP-by-cell (or pathway) annotation matrix.
+#' @param B Gene-by-cell (or pathway) annotation matrix.
+#' @param baseline Optional SNP-level baseline covariates.
+#' @param pathways Optional gene-level pathway covariates.
+#' @param phenotype_variance Phenotypic variance used in the summary-data likelihood.
+#' @param niter Total number of MCMC iterations.
+#' @param burnin Number of burn-in iterations.
+#' @param thin Thinning interval.
+#' @param store_beta Logical; store posterior SNP effects.
+#' @param store_delta Logical; store posterior SNP inclusion indicators.
+#' @param startPiSnp Initial SNP inclusion probability.
+#' @param startPiGene Initial gene inclusion probability.
+#' @param startRho Initial cell/pathway inclusion probability.
+#' @param startH2 Initial heritability.
+#' @param mu_pi Optional initial SNP-level probit intercept.
+#' @param mu_Pi Optional initial gene-level probit intercept.
+#' @param sigmaAlphaSq Prior variance for enrichment parameters.
+#' @param nub Prior degrees of freedom for SNP-effect variance.
+#' @param nue Prior degrees of freedom for residual variance.
+#' @param verbose Logical; print MCMC progress.
+#'
+#' @details
+#' This function implements the block-wise version of BayesMAP for GWAS
+#' summary statistics. Independent LD blocks are updated separately,
+#' allowing substantially reduced memory requirements for large-scale
+#' genome-wide analyses while maintaining inference equivalent to the
+#' dense implementation.
+#'
+#' @return
+#' An object of class
+#' \code{BayesMAPSummaryBlocks},
+#' \code{BayesMAPSummary},
+#' and \code{BayesMAP}
+#' containing posterior samples, posterior inclusion probabilities,
+#' estimated variance components, block information, and MCMC settings.
+#'
+#' @seealso
+#' \code{\link{bayesmap_summary}},
+#' \code{\link{bayesmap}}
+#'
+#' @export
 
 # Blockwise summary-statistics BayesMAP reference sampler
-bayesmap_summary_blocks_R <- function(
+bayesmap_summary_blocks <- function(
     bhat,
     LD_blocks,
     block_indices,
@@ -595,7 +475,7 @@ bayesmap_summary_blocks_R <- function(
     if (!is.finite(mean1)) mean1 <- 0
     if (!is.finite(sd1) || sd1 <= 0) sd1 <- 1
 
-    alpha1 <- rtruncnorm_summary_scalar(
+    alpha1 <- rtruncnorm_scalar(
       mean = mean1,
       sd = sd1,
       lower = 0
@@ -616,7 +496,7 @@ bayesmap_summary_blocks_R <- function(
     if (!is.finite(mean2)) mean2 <- 0
     if (!is.finite(sd2) || sd2 <= 0) sd2 <- 1
 
-    alpha2 <- rtruncnorm_summary_scalar(
+    alpha2 <- rtruncnorm_scalar(
       mean = mean2,
       sd = sd2,
       lower = 0
@@ -640,7 +520,7 @@ bayesmap_summary_blocks_R <- function(
     if (!is.finite(mean3)) mean3 <- 0
     if (!is.finite(sd3) || sd3 <= 0) sd3 <- 1
 
-    alpha3 <- rtruncnorm_summary_scalar(
+    alpha3 <- rtruncnorm_scalar(
       mean = mean3,
       sd = sd3,
       lower = 0

@@ -1,4 +1,4 @@
-test_that("bayesmap_summary_R returns valid posterior output", {
+test_that("bayesmap_summary returns valid posterior output", {
   set.seed(123)
 
   N <- 80L
@@ -65,7 +65,7 @@ test_that("bayesmap_summary_R returns valid posterior output", {
 
   set.seed(999)
 
-  fit <- bayesmap_summary_R(
+  fit <- bayesmap_summary(
     bhat = bhat,
     LD = LD,
     N = N,
