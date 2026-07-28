@@ -17,7 +17,7 @@
 
 # Overview
 
-**BayesMAP** is an R package for Bayesian multi-layer association mapping that jointly models genetic variants, genes and biological annotations within a unified hierarchical Bayesian framework.
+**BayesMAP** is an R package for Bayesian multi-layer association mapping that jointly models genetic variants, genes, cell types and biological annotations within a unified hierarchical Bayesian framework.
 
 Unlike conventional GWAS methods that analyse variants independently, BayesMAP borrows information across multiple biological layers to improve identification of causal variants and biologically relevant functional units.
 
