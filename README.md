@@ -233,7 +233,7 @@ All fitting functions return an object containing
 - SNP effects
 - SNP posterior inclusion probabilities
 - Gene posterior inclusion probabilities
-- Cell/pathway posterior inclusion probabilities
+- Cell posterior inclusion probabilities
 - Estimated heritability
 - Genetic variance
 - Residual variance
