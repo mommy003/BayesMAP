@@ -42,7 +42,7 @@ SNP
 Gene
  │
  ▼
-Cell / Pathway
+Cell 
 ```
 
 The model estimates
