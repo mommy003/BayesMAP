@@ -48,9 +48,9 @@ Cell
 The model estimates
 
 - SNP effects (β)
-- SNP inclusion indicators (δ)
-- Gene inclusion indicators (Δ)
-- Cell/pathway inclusion indicators (γ)
+- SNP (causal) inclusion indicators (δ)
+- Gene (causal) inclusion indicators (Δ)
+- Cell (causal) inclusion indicators (γ)
 - SNP heritability
 - Genetic variance
 - Residual variance
