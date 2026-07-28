@@ -34,17 +34,6 @@ Computationally intensive MCMC updates are implemented in **Rcpp/C++**, providin
 # Methodological framework
 
 BayesMAP models three biological layers simultaneously
-
-```
-SNP
- │
- ▼
-Gene
- │
- ▼
-Cell 
-```
-
 The model estimates
 
 - SNP effects (β)
