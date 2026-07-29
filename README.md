@@ -4,7 +4,7 @@
 
 ### Bayesian Multi-layer Association Mapping
 
-*A hierarchical Bayesian framework for integrating SNPs, genes and cell/pathway annotations using individual-level or GWAS summary statistics.*
+*A hierarchical Bayesian framework for integrating SNPs, genes and cell annotations using individual-level or GWAS summary statistics.*
 
 ---
 
